@@ -28,15 +28,22 @@ class PaperSpider(Spider):
             hot_list = sel.xpath('//*[@class="list_hot"]')
             items = []
             with codecs.open('article_list.txt', 'w', 'utf-8') as f:
+                count = 1
                 for article_list in hot_list:
                     for article in article_list.xpath('li'):
                         item = FmcmItem()
                         title = article.xpath('a/text()').extract()
-                        if title:
-                            item['title'] = title[0]
-                            items.append(item)
-                            f.write(item['title'])
-                            f.write('\n')
+                        url = article.xpath('a/attribute::href').extract()
+                        if not title:
+                            continue
+                        if not url:
+                            url = ''
+                        item['title'] = title[0]
+                        item['url'] = url[0]
+                        items.append(item)
+                        f.write('%s. ' % count)
+                        count += 1
+                        f.write('title: %s\n    url: %s\n' % (title[0], url[0]))
         except Exception as e:
             import pdb; pdb.set_trace()
 
