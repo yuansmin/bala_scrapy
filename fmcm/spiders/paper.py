@@ -31,7 +31,7 @@ class PaperSpider(Spider):
             count = 1
             for article_list in hot_list:
                 for article in article_list.xpath('li'):
-                    item = FmcmItem()
+                    item = {}
                     title = article.xpath('a/text()').extract()
                     url = article.xpath('a/attribute::href').extract()
                     # import pdb; pdb.set_trace()
@@ -41,18 +41,20 @@ class PaperSpider(Spider):
                         url = ''
                     else:
                         url = response.urljoin(url[0])
-                    item['title'] = title[0]
-                    item['url'] = url[0]
-                    items.append(item)
-                    f = codecs.open('article_list.txt', 'a', 'utf-8')
-                    f.write('%s. ' % count)
+                    item['list_title'] = title[0]
+                    item['url'] = url
+                    item['count'] = count
                     count += 1
-                    f.write(
-                        'title: %s\n    url: %s\n' % (title[0], url))
-                    f.flush()
+                    # f = codecs.open('article_list.txt', 'a', 'utf-8')
+                    # f.write('%s. ' % count)
+                    # f.write(
+                    #     'title: %s\n    url: %s\n' % (title[0], url))
+                    # f.flush()
 
                     # for news detail process
-                    yield Request(url, callback=self.parse_news_detail)
+                    request = Request(url, callback=self.parse_news_detail)
+                    request.meta.update(item)
+                    yield request
         except Exception as e:
             import pdb; pdb.set_trace()
 
@@ -74,8 +76,10 @@ class PaperSpider(Spider):
             news_about = '%s%s' % (news_about, s[0])
             # import pdb; pdb.set_trace()
             content = sel.xpath('//*[@class="news_txt"]').extract()
-            news_editor = sel.xpath('//*[@class="news_editor"]/text()').extract()
-            news_keyword = sel.xpath('//*[@class=news_keyword]/text()').extract()
+            news_editor = sel.xpath(
+                '//*[@class="news_editor"]/text()').extract()
+            news_keyword = sel.xpath(
+                '//*[@class=news_keyword]/text()').extract()
             zan = sel.xpath('//*[@id="zan"]/text()').extract()
             title = ''.join(title)
             content = ''.join(content)
@@ -84,8 +88,10 @@ class PaperSpider(Spider):
             zan = zan[0] if zan else ''
             with codecs.open('article_detail.txt', 'a', 'utf-8') as f:
                 f.write(
-                    '%s\n%s  zan:%s%s\n%s\n%s\n\n\n' %
-                    (title, news_editor, zan, news_about, news_keyword, content)
+                    '%s.  %s\n%s\n%s\n%s  zan:%s%s\n%s\n%s\n\n\n' %
+                    (response.meta['count'], response.meta['list_title'],
+                        response.meta['url'], title, news_editor, zan,
+                        news_about, news_keyword, content)
                 )
         except Exception as e:
             import pdb; pdb.set_trace()
